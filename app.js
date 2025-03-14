@@ -146,74 +146,35 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             console.log('Sending request to Ollama API...');
             
+            const requestBody = {
+                model: 'qwen2.5:0.5b',
+                prompt: message,
+                stream: false // Changed to false for simpler handling
+            };
+
+            console.log('Request body:', JSON.stringify(requestBody, null, 2));
+            
             const response = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    model: 'qwen2.5:0.5b',
-                    prompt: message,
-                    system: SYSTEM_PROMPT,
-                    stream: true
-                })
+                body: JSON.stringify(requestBody)
             });
 
             console.log('Response status:', response.status);
 
             if (!response.ok) {
-                throw new Error(`API request failed with status ${response.status}`);
+                const errorText = await response.text();
+                console.error('API Error Response:', errorText);
+                throw new Error(`API request failed with status ${response.status}: ${errorText}`);
             }
 
-            const reader = response.body.getReader();
-            let fullResponse = '';
-            let thinkingPart = '';
-            let finalAnswer = '';
+            const data = await response.json();
+            console.log('API Response:', data);
 
-            while (true) {
-                const { done, value } = await reader.read();
-                
-                if (done) {
-                    console.log('Stream complete');
-                    break;
-                }
-
-                const chunk = new TextDecoder().decode(value);
-                console.log('Received chunk:', chunk);
-
-                const lines = chunk.split('\n').filter(line => line.trim());
-
-                for (const line of lines) {
-                    try {
-                        const data = JSON.parse(line);
-                        if (data.response) {
-                            fullResponse += data.response;
-                            
-                            const thinkMatch = fullResponse.match(/<think>([\s\S]*?)<\/think>/);
-                            if (thinkMatch) {
-                                thinkingPart = thinkMatch[1].trim();
-                                finalAnswer = fullResponse.replace(/<think>[\s\S]*?<\/think>/, '').trim();
-                            } else {
-                                finalAnswer = fullResponse;
-                            }
-
-                            let displayContent = '';
-                            if (thinkingPart) {
-                                displayContent = `🧠 **Thinking Process:**\n${thinkingPart}\n\n`;
-                            }
-                            if (finalAnswer) {
-                                displayContent += finalAnswer;
-                            }
-
-                            thinkingMessage.querySelector('.message-text').innerHTML = displayContent;
-                            thinkingMessage.scrollIntoView({ behavior: 'smooth' });
-                        }
-                    } catch (parseError) {
-                        console.error('Error parsing chunk:', parseError);
-                        console.log('Problematic chunk:', line);
-                    }
-                }
-            }
+            thinkingMessage.querySelector('.message-text').innerHTML = data.response;
+            thinkingMessage.scrollIntoView({ behavior: 'smooth' });
 
         } catch (error) {
             console.error('Error in sendMessage:', {
@@ -226,10 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
             let errorMessage = '⚠️ Error: ';
             
             if (error.message.includes('Failed to fetch')) {
-                errorMessage += 'Could not connect to Ollama. Please check if:\n' +
-                              '1. Ollama is running\n' +
-                              '2. The API is accessible at http://localhost:11434\n' +
-                              '3. The model "qwen2.5:0.5b" is installed';
+                errorMessage += 'Could not connect to Ollama API. Please check if:\n' +
+                              '1. Ollama is running (systemctl status ollama)\n' +
+                              '2. The API is accessible (curl test)\n' +
+                              '3. The model "qwen2.5:0.5b" is installed (ollama list)';
             } else if (error.message.includes('404')) {
                 errorMessage += 'API endpoint not found. Please verify the API URL.';
             } else if (error.message.includes('500')) {

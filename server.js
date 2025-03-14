@@ -15,6 +15,14 @@ const app = express();
 app.use(express.static(__dirname));
 app.use(express.json());
 
+// CORS middleware
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+});
+
 // Route for the main page
 app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));
@@ -23,16 +31,17 @@ app.get('/', (req, res) => {
 // Proxy route for Ollama API
 app.post('/api/generate', async (req, res) => {
     try {
+        console.log('Received request:', req.body);
+
         const response = await fetch('http://localhost:11434/api/generate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: process.env.OLLAMA_MODEL || 'qwen2.5:0.5b',
+                model: 'qwen2.5:0.5b',
                 prompt: req.body.prompt,
-                system: req.body.system,
-                stream: true
+                stream: false
             })
         });
 
@@ -40,13 +49,8 @@ app.post('/api/generate', async (req, res) => {
             throw new Error(`Ollama API error: ${response.status}`);
         }
 
-        // Set headers for streaming
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-
-        // Pipe the Ollama response directly to the client
-        response.body.pipe(res);
+        const data = await response.json();
+        res.json(data);
 
     } catch (error) {
         console.error('Server error:', error);
