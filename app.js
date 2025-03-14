@@ -40,12 +40,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Handle suggestion chips
-    suggestionChips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            chatInput.value = chip.textContent;
-            sendMessage();
+    function renderSuggestionChips() {
+        const suggestionsContainer = document.querySelector('.suggestion-chips');
+        suggestionsContainer.innerHTML = '';
+        
+        const selectedPrompts = getRandomPrompts();
+        selectedPrompts.forEach(prompt => {
+            const chip = document.createElement('div');
+            chip.className = 'suggestion-chip';
+            chip.textContent = prompt;
+            chip.addEventListener('click', () => {
+                chatInput.value = prompt;
+                sendMessage();
+            });
+            suggestionsContainer.appendChild(chip);
         });
-    });
+    }
 
     // Send message on Enter (without Shift)
     chatInput.addEventListener('keydown', (e) => {
