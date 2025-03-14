@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         message.innerHTML = `
             <div class="avatar ${isUser ? 'user-avatar' : ''}">
                 <svg viewBox="0 0 24 24">
-                    <path d="${isUser ? 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z' : 'M20 12a8 8 0 0 0-8-8A8 8 0 0 0 4 12a8 8 0 0 0 8 8 8 8 0 0 0 8-8m2 0A10 10 0 0 1 12 22 10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10M6.94 14.24c-.6.45-.6 1.07 0 1.52.6.45 1.57.45 2.17 0 .6-.45.6-1.07 0-1.52-.6-.45-1.57-.45-2.17 0m8.83 0c-.6.45-.6 1.07 0 1.52.6.45 1.57.45 2.17 0 .6-.45.6-1.07 0-1.52-.6-.45-1.57-.45-2.17 0M12 17.25c2.69 0 3.88-1.69 3.88-1.69l-1.88-1.06c0 .7-1.37 1.06-2 1.06-.64 0-2-.36-2-1.06l-1.88 1.06s1.19 1.69 3.88 1.69z'}"/>
+                    <path d="${isUser ? 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z' : 'M20 12a8 8 0 0 0-8-8A8 8 0 0 0 4 12a8 8 0 0 0 8 8 8 8 0 0 0 8-8m2 0A10 10 0 0 1 12 22 10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10'}"/>
                 </svg>
             </div>
             <div class="message-content">
@@ -106,18 +106,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const thinking = addThinkingIndicator();
 
         try {
-            console.log('Sending request to Ollama API...');
+            console.log('Sending request to API...');
             console.log('Message:', message);
             
-            const response = await fetch('http://localhost:11434/api/generate', {
+            const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    model: 'qwen2.5:0.5b',
-                    prompt: message,
-                    stream: false
+                    prompt: message
                 })
             });
 
@@ -138,15 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             thinking.remove();
-            let errorMessage = 'Error: Could not connect to Ollama. Please make sure it is running.';
-            
-            if (error.message.includes('Failed to fetch')) {
-                errorMessage = 'Error: Could not connect to Ollama API. Please check if Ollama is running on port 11434.';
-            } else if (error.message.includes('HTTP error')) {
-                errorMessage = `Error: Server returned ${error.message}. Please check your Ollama configuration.`;
-            }
-            
-            addMessage(errorMessage);
+            addMessage('Error: Could not get a response. Please try again.');
         }
 
         isProcessing = false;
