@@ -29,16 +29,26 @@ app.post('/api/generate', async (req, res) => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: process.env.OLLAMA_MODEL || 'llama2',
+                model: process.env.OLLAMA_MODEL || 'qwen2.5:0.5b',
                 prompt: req.body.prompt,
-                stream: false
+                stream: false,
+                format: 'json'
             })
         });
-        
+
+        if (!response.ok) {
+            throw new Error(`Ollama API error: ${response.status}`);
+        }
+
         const data = await response.json();
+        console.log('Ollama response:', data);
         res.json(data);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to communicate with Ollama API' });
+        console.error('Server error:', error);
+        res.status(500).json({ 
+            error: 'Failed to communicate with Ollama API',
+            details: error.message
+        });
     }
 });
 

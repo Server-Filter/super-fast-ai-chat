@@ -106,17 +106,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const thinking = addThinkingIndicator();
 
         try {
-            console.log('Sending request to API...');
-            console.log('Message:', message);
+            console.log('Sending request:', message);
             
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    prompt: message
-                })
+                body: JSON.stringify({ prompt: message })
             });
 
             if (!response.ok) {
@@ -127,6 +124,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('API Response:', data);
             
             thinking.remove();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
             addMessage(data.response);
         } catch (error) {
             console.error('Error details:', {
@@ -136,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             thinking.remove();
-            addMessage('Error: Could not get a response. Please try again.');
+            addMessage(`Error: ${error.message}`);
         }
 
         isProcessing = false;
