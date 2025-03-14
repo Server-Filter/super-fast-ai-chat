@@ -106,22 +106,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const thinking = addThinkingIndicator();
 
         try {
-            const response = await fetch('/api/generate', {
+            const response = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    model: 'qwen2.5:0.5b',
                     prompt: message,
+                    stream: false
                 })
             });
+
+            if (!response.ok) {
+                throw new Error('API response was not ok');
+            }
 
             const data = await response.json();
             thinking.remove();
             addMessage(data.response);
         } catch (error) {
             thinking.remove();
-            addMessage('Sorry, there was an error processing your request. Please try again.');
+            addMessage('Error: Could not connect to Ollama. Please make sure it is running.');
+            console.error('Error:', error);
         }
 
         isProcessing = false;
