@@ -18,6 +18,8 @@
             --code-bg: #f6f8fa;
             --radius: 12px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --header-bg: #ffffff;
+            --message-bg: var(--bg-warm);
         }
 
         [data-theme="dark"] {
@@ -30,6 +32,8 @@
             --text-warm: #8b949e;
             --border-warm: #30363d;
             --code-bg: #1e1e1e;
+            --header-bg: #0d1117;
+            --message-bg: var(--bg-warm);
         }
         
         * {
@@ -57,12 +61,12 @@
         
         header {
             padding: 1rem;
-            background-color: rgba(248, 250, 252, 0.8);
+            background-color: var(--header-bg);
             backdrop-filter: blur(8px);
             position: sticky;
             top: 0;
             z-index: 10;
-            border-bottom: 1px solid rgba(30, 41, 59, 0.1);
+            border-bottom: 1px solid var(--border-warm);
         }
         
         .header-content {
@@ -309,7 +313,7 @@
         
         .message-content {
             flex: 1;
-            background: var(--bg-warm);
+            background: var(--message-bg);
             border: 1px solid var(--border-warm);
             border-radius: var(--radius);
             padding: 1.25rem;
@@ -321,7 +325,7 @@
         }
         
         .user-message .message-content {
-            background: #f6f8fa;
+            background: var(--bg-warm);
             border-color: var(--border-warm);
         }
         
@@ -560,6 +564,14 @@
         strong {
             color: var(--primary);
             font-weight: 600;
+        }
+
+        [data-theme="dark"] .logo svg {
+            fill: var(--primary);
+        }
+
+        [data-theme="light"] .logo svg {
+            fill: var(--primary);
         }
     </style>
     <script>
