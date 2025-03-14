@@ -106,6 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const thinking = addThinkingIndicator();
 
         try {
+            console.log('Sending request to Ollama API...');
+            console.log('Message:', message);
+            
             const response = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
                 headers: {
@@ -119,16 +122,31 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                throw new Error('API response was not ok');
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
+            console.log('API Response:', data);
+            
             thinking.remove();
             addMessage(data.response);
         } catch (error) {
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                timestamp: new Date().toISOString()
+            });
+            
             thinking.remove();
-            addMessage('Error: Could not connect to Ollama. Please make sure it is running.');
-            console.error('Error:', error);
+            let errorMessage = 'Error: Could not connect to Ollama. Please make sure it is running.';
+            
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Error: Could not connect to Ollama API. Please check if Ollama is running on port 11434.';
+            } else if (error.message.includes('HTTP error')) {
+                errorMessage = `Error: Server returned ${error.message}. Please check your Ollama configuration.`;
+            }
+            
+            addMessage(errorMessage);
         }
 
         isProcessing = false;
