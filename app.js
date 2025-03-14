@@ -1,10 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Theme toggle functionality
     const themeToggle = document.getElementById('theme-toggle');
-    
+    const modeText = themeToggle.querySelector('.mode-text');
+
     // Check for saved theme preference or default to light
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
+    modeText.textContent = savedTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
 
     // Theme toggle handler
     themeToggle.addEventListener('click', () => {
@@ -13,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
+        modeText.textContent = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
 
         // Optional: Add smooth transition
         document.documentElement.style.transition = 'background-color 0.3s ease, color 0.3s ease';
