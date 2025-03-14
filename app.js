@@ -2,11 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatContainer = document.querySelector('.chat-container');
     const chatMessages = document.querySelector('.chat-messages');
     const chatInput = document.querySelector('.chat-input');
-    const sendButton = document.querySelector('.send-btn');
-    const settingsBtn = document.querySelector('.settings-btn');
-    const settingsPanel = document.querySelector('.settings-panel');
-    const settingsClose = document.querySelector('.settings-close');
-    const suggestionChips = document.querySelectorAll('.suggestion-chip');
     const welcomeScreen = document.querySelector('.welcome-screen');
     
     let isProcessing = false;
@@ -26,51 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
     Always keep your thoughts within these <think></think> tags and your final answer outside these tags.
     `;
 
-    // Settings Panel
-    settingsBtn.addEventListener('click', () => {
-        settingsPanel.classList.add('open');
-    });
-
-    settingsClose.addEventListener('click', () => {
-        settingsPanel.classList.remove('open');
-    });
-
-    // Model Selection
-    modelSelect.addEventListener('click', () => {
-        modelSelect.classList.toggle('active');
-    });
-
-    document.querySelectorAll('.model-option').forEach(option => {
-        option.addEventListener('click', () => {
-            currentModel = option.dataset.model;
-            selectedModelSpan.textContent = currentModel;
-            modelSelect.classList.remove('active');
-        });
-    });
-
     // Auto-resize textarea
     chatInput.addEventListener('input', () => {
         chatInput.style.height = 'auto';
         chatInput.style.height = chatInput.scrollHeight + 'px';
     });
-
-    // Handle suggestion chips
-    function renderSuggestionChips() {
-        const suggestionsContainer = document.querySelector('.suggestion-chips');
-        suggestionsContainer.innerHTML = '';
-        
-        const selectedPrompts = getRandomPrompts();
-        selectedPrompts.forEach(prompt => {
-            const chip = document.createElement('div');
-            chip.className = 'suggestion-chip';
-            chip.textContent = prompt;
-            chip.addEventListener('click', () => {
-                chatInput.value = prompt;
-                sendMessage();
-            });
-            suggestionsContainer.appendChild(chip);
-        });
-    }
 
     // Send message on Enter (without Shift)
     chatInput.addEventListener('keydown', (e) => {
@@ -80,12 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
             sendMessage();
         }
     });
-
-    sendButton.addEventListener('click', sendMessage);
-
-    function formatThinkingBlock(text) {
-        return text.split('\n').map(line => `> ${line}`).join('\n');
-    }
 
     function addMessage(content, isUser = false, isThinking = false) {
         if (welcomeScreen) {
@@ -149,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const requestBody = {
                 model: 'qwen2.5:0.5b',
                 prompt: message,
-                stream: false // Changed to false for simpler handling
+                stream: false
             };
 
             console.log('Request body:', JSON.stringify(requestBody, null, 2));
@@ -165,9 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Response status:', response.status);
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('API Error Response:', errorText);
-                throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
@@ -196,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (error.message.includes('500')) {
                 errorMessage += 'Server error occurred. Please check Ollama logs.';
             } else {
-                errorMessage += `Unexpected error: ${error.message}`;
+                errorMessage += `${error.message}\n\nPlease check the browser console for more details.`;
             }
 
             thinkingMessage.querySelector('.message-text').innerHTML = errorMessage;
@@ -206,18 +153,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Add this function to select random prompts
-    function getRandomPrompts(count = 3) {
-        const shuffled = [...suggestionPrompts].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, count);
-    }
-
-    // Function to render suggestion chips
-    function renderSuggestionChips() {
-        const suggestionsContainer = document.querySelector('.suggestion-chips');
-        suggestionsContainer.innerHTML = ''; // Clear existing chips
+    // Initialize suggestion chips
+    const suggestionsContainer = document.querySelector('.suggestion-chips');
+    if (suggestionsContainer) {
+        const selectedPrompts = suggestionPrompts
+            .sort(() => 0.5 - Math.random())
+            .slice(0, 3);
         
-        const selectedPrompts = getRandomPrompts();
         selectedPrompts.forEach(prompt => {
             const chip = document.createElement('div');
             chip.className = 'suggestion-chip';
@@ -230,9 +172,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Render initial suggestions
-    renderSuggestionChips();
-
-    // Remove the old suggestion chips event listeners since we're now adding them
-    // when we create the chips
+    console.log('Chat interface ready');
 });
