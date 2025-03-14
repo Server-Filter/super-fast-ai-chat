@@ -294,6 +294,8 @@
             line-height: 1.6;
             color: var(--light);
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            max-width: 100%;
+            overflow-x: auto;
         }
         
         .user-message .message-content {
@@ -319,20 +321,21 @@
         
         .message-text {
             white-space: pre-wrap;
+            word-break: break-word;
         }
         
         .message-text code {
-            background: rgba(255, 255, 255, 0.1);
+            background: #f6f8fa;
             padding: 0.2rem 0.4rem;
             border-radius: 4px;
-            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-family: monospace;
             font-size: 0.9em;
         }
         
         .message-text pre {
-            background: rgba(0, 0, 0, 0.3);
+            background: #f6f8fa;
             padding: 1rem;
-            border-radius: var(--radius);
+            border-radius: 6px;
             overflow-x: auto;
             margin: 1rem 0;
         }
@@ -340,6 +343,7 @@
         .message-text pre code {
             background: transparent;
             padding: 0;
+            border-radius: 0;
         }
         
         .thinking {
@@ -454,6 +458,15 @@
         .send-btn:hover {
             background: var(--primary-dark);
             color: white;
+        }
+
+        .thinking-block {
+            background: #f0f0f0;
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            white-space: pre-wrap;
         }
     </style>
     <script>

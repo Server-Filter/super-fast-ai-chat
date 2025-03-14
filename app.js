@@ -45,8 +45,19 @@ document.addEventListener('DOMContentLoaded', () => {
         message.className = `message ${isUser ? 'user-message' : ''}`;
         
         let formattedContent = content;
-        if (isThinking) {
-            formattedContent = formatThinkingBlock(content);
+        if (typeof content === 'string') {
+            // Format code blocks with ```
+            formattedContent = content.replace(/```([\s\S]*?)```/g, (match, code) => {
+                return `<pre><code>${code}</code></pre>`;
+            });
+            
+            // Format inline code with `
+            formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Format thinking blocks
+            formattedContent = formattedContent.replace(/<think>([\s\S]*?)<\/think>/g, (match, thinking) => {
+                return `<div class="thinking-block">🤔 Thinking Process:\n${thinking}</div>`;
+            });
         }
 
         message.innerHTML = `
