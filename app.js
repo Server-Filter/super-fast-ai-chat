@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let isProcessing = false;
 
+    console.log('Chat interface initialized');
+
     // System prompt for thinking process
     const SYSTEM_PROMPT = `
     You are a helpful AI assistant. When you receive a question, first think about it and provide your thinking process in "think" tags.
@@ -73,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Send message on Enter (without Shift)
     chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
+            console.log('Enter key pressed, attempting to send message');
             e.preventDefault();
             sendMessage();
         }
@@ -119,9 +122,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function sendMessage() {
         const message = chatInput.value.trim();
-        if (!message || isProcessing) return;
+        console.log('Attempting to send message:', message);
+
+        if (!message) {
+            console.log('Message is empty, ignoring');
+            return;
+        }
+
+        if (isProcessing) {
+            console.log('Already processing a message, ignoring');
+            return;
+        }
 
         isProcessing = true;
+        console.log('Processing started');
+
         const userMessageElement = addMessage(message, true);
         chatInput.value = '';
         chatInput.style.height = 'auto';
@@ -131,20 +146,25 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             console.log('Sending request to Ollama API...');
             
-            const response = await fetch('/api/generate', {
+            const response = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    model: 'qwen2.5:0.5b',
                     prompt: message,
                     system: SYSTEM_PROMPT,
                     stream: true
                 })
             });
 
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+
             const reader = response.body.getReader();
             let fullResponse = '';
             let thinkingPart = '';
@@ -152,9 +172,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) break;
+                
+                if (done) {
+                    console.log('Stream complete');
+                    break;
+                }
 
                 const chunk = new TextDecoder().decode(value);
+                console.log('Received chunk:', chunk);
+
                 const lines = chunk.split('\n').filter(line => line.trim());
 
                 for (const line of lines) {
@@ -171,7 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 finalAnswer = fullResponse;
                             }
 
-                            // Update the thinking message
                             let displayContent = '';
                             if (thinkingPart) {
                                 displayContent = `🧠 **Thinking Process:**\n${thinkingPart}\n\n`;
@@ -183,24 +208,41 @@ document.addEventListener('DOMContentLoaded', () => {
                             thinkingMessage.querySelector('.message-text').innerHTML = displayContent;
                             thinkingMessage.scrollIntoView({ behavior: 'smooth' });
                         }
-                    } catch (error) {
-                        console.error('Error parsing chunk:', error);
+                    } catch (parseError) {
+                        console.error('Error parsing chunk:', parseError);
+                        console.log('Problematic chunk:', line);
                     }
                 }
             }
 
         } catch (error) {
-            console.error('Error details:', {
+            console.error('Error in sendMessage:', {
+                name: error.name,
                 message: error.message,
                 stack: error.stack,
                 timestamp: new Date().toISOString()
             });
             
-            thinkingMessage.querySelector('.message-text').textContent = 
-                '⚠️ Error: Could not get a response. Please try again.';
-        }
+            let errorMessage = '⚠️ Error: ';
+            
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage += 'Could not connect to Ollama. Please check if:\n' +
+                              '1. Ollama is running\n' +
+                              '2. The API is accessible at http://localhost:11434\n' +
+                              '3. The model "qwen2.5:0.5b" is installed';
+            } else if (error.message.includes('404')) {
+                errorMessage += 'API endpoint not found. Please verify the API URL.';
+            } else if (error.message.includes('500')) {
+                errorMessage += 'Server error occurred. Please check Ollama logs.';
+            } else {
+                errorMessage += `Unexpected error: ${error.message}`;
+            }
 
-        isProcessing = false;
+            thinkingMessage.querySelector('.message-text').innerHTML = errorMessage;
+        } finally {
+            console.log('Processing complete');
+            isProcessing = false;
+        }
     }
 
     // Add this function to select random prompts
