@@ -1,0 +1,12 @@
+{
+  "name": "super-fast-ai-chat",
+  "version": "1.0.0",
+  "description": "Ultra-Fast AI Chat Interface",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
