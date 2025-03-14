@@ -73,15 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = chatInput.value.trim();
         console.log('Attempting to send message:', message);
 
-        if (!message) {
-            console.log('Message is empty, ignoring');
-            return;
-        }
-
-        if (isProcessing) {
-            console.log('Already processing a message, ignoring');
-            return;
-        }
+        if (!message || isProcessing) return;
 
         isProcessing = true;
         console.log('Processing started');
@@ -93,26 +85,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const thinkingMessage = addMessage('🤔 Thinking...', false);
 
         try {
-            console.log('Sending request to Ollama API...');
+            console.log('Sending request to server...');
             
-            // First try to verify API is accessible
-            const healthCheck = await fetch('http://localhost:11434/api/tags', {
-                method: 'GET'
-            });
-            
-            if (!healthCheck.ok) {
-                throw new Error('Ollama API is not accessible');
-            }
-
-            const response = await fetch('http://localhost:11434/api/generate', {
+            const response = await fetch('/api/generate', { // Changed to use relative URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    model: 'qwen2.5:0.5b',
-                    prompt: message,
-                    stream: false
+                    prompt: message
                 })
             });
 
@@ -127,13 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             console.log('API Response:', data);
 
-            // Update the thinking message with the response
-            if (data.response) {
-                thinkingMessage.querySelector('.message-text').innerHTML = data.response;
-            } else {
-                throw new Error('No response from API');
+            if (data.error) {
+                throw new Error(data.error);
             }
 
+            thinkingMessage.querySelector('.message-text').innerHTML = data.response;
             thinkingMessage.scrollIntoView({ behavior: 'smooth' });
 
         } catch (error) {
@@ -146,16 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let errorMessage = '⚠️ Error: ';
             
-            if (error.message.includes('Failed to fetch') || error.message.includes('not accessible')) {
-                errorMessage += 'Could not connect to Ollama API. Please check if:\n\n' +
-                              '1. Ollama is running:\n   systemctl status ollama\n\n' +
-                              '2. Test the API:\n   curl -X POST http://localhost:11434/api/generate -d \'{"model":"qwen2.5:0.5b","prompt":"hello","stream":false}\'\n\n' +
-                              '3. Model is installed:\n   ollama list\n\n' +
-                              '4. Port 11434 is accessible';
-            } else if (error.message.includes('404')) {
-                errorMessage += 'API endpoint not found. Make sure Ollama API is running on port 11434';
-            } else if (error.message.includes('500')) {
-                errorMessage += 'Server error. Check Ollama logs:\n   journalctl -u ollama -f';
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage += 'Could not connect to server. Please check if the server is running.';
             } else {
                 errorMessage += `${error.message}\n\nPlease check the browser console for more details.`;
             }

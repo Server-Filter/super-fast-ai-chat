@@ -38,24 +38,42 @@ app.post('/api/generate', async (req, res) => {
     try {
         console.log('Received request:', req.body);
 
+        if (!req.body.prompt) {
+            throw new Error('No prompt provided');
+        }
+
+        console.log('Sending request to Ollama...');
+        
         const response = await fetch('http://localhost:11434/api/generate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'qwen2.5:0.5b',
+                model: process.env.OLLAMA_MODEL || 'qwen2.5:0.5b',
                 prompt: req.body.prompt,
                 stream: false
             })
         });
 
+        console.log('Ollama response status:', response.status);
+
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Ollama error:', errorText);
             throw new Error(`Ollama API error: ${response.status}`);
         }
 
         const data = await response.json();
-        res.json(data);
+        console.log('Ollama response:', {
+            model: data.model,
+            response_length: data.response?.length
+        });
+
+        res.json({
+            response: data.response,
+            model: data.model
+        });
 
     } catch (error) {
         console.error('Server error:', error);
