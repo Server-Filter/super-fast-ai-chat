@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NexusTalk AI | Ollama-Powered Intelligence</title>
+    <title>AI Assistant</title>
     <style>
         :root {
-            --primary: #6b7280;
-            --primary-dark: #4b5563;
-            --secondary: #9ca3af;
+            --primary: #8957e5;
+            --primary-dark: #7046b2;
+            --secondary: #6e7681;
             --dark: #ffffff;
-            --light: #111827;
-            --accent: #e5e7eb;
-            --error: #ef4444;
+            --light: #24292f;
+            --bg-warm: #fcfcfc;
+            --text-warm: #57606a;
+            --border-warm: #d0d7de;
             --radius: 12px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -56,7 +57,7 @@
             gap: 0.75rem;
             font-weight: 700;
             font-size: 1.5rem;
-            color: var(--light);
+            color: var (--light);
         }
         
         .logo svg {
@@ -153,14 +154,14 @@
         
         .welcome-title {
             font-size: 2.5rem;
-            font-weight: 800;
+            font-weight: 700;
             color: var(--primary);
             margin-bottom: 1rem;
         }
         
         .welcome-subtitle {
-            font-size: 1.25rem;
-            color: var(--secondary);
+            font-size: 1.1rem;
+            color: var(--text-warm);
             max-width: 600px;
             margin-bottom: 2rem;
         }
@@ -220,21 +221,24 @@
             flex-wrap: wrap;
             gap: 0.5rem;
             margin-top: 1rem;
+            justify-content: center;
         }
         
         .suggestion-chip {
-            background: rgba(30, 41, 59, 0.05);
-            border: 1px solid rgba(30, 41, 59, 0.1);
-            border-radius: 24px;
-            padding: 0.75rem 1.5rem;
+            background: var(--bg-warm);
+            border: 1px solid var(--border-warm);
+            border-radius: 20px;
+            padding: 0.6rem 1.2rem;
             font-size: 0.9rem;
             cursor: pointer;
             transition: var(--transition);
+            color: var(--light);
         }
         
         .suggestion-chip:hover {
-            background: rgba(30, 41, 59, 0.1);
+            background: #f6f8fa;
             border-color: var(--primary);
+            color: var(--primary);
         }
         
         .chat-messages {
@@ -283,16 +287,18 @@
         
         .message-content {
             flex: 1;
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
+            background: var(--bg-warm);
+            border: 1px solid var(--border-warm);
             border-radius: var(--radius);
-            padding: 1rem;
+            padding: 1.25rem;
             line-height: 1.6;
+            color: var(--light);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
         
         .user-message .message-content {
-            background: #f3f4f6;
-            border-color: #e5e7eb;
+            background: #f6f8fa;
+            border-color: var(--border-warm);
         }
         
         .message-header {
@@ -379,17 +385,17 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
+            background: var(--bg-warm);
+            border: 1px solid var(--border-warm);
             border-radius: var(--radius);
-            padding: 0.5rem;
+            padding: 0.75rem;
             transition: var(--transition);
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
         
         .input-box:focus-within {
             border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.1);
+            box-shadow: 0 0 0 3px rgba(137, 87, 229, 0.2);
         }
         
         .chat-input {
@@ -398,22 +404,23 @@
             border: none;
             color: var(--light);
             font-size: 1rem;
-            padding: 0.75rem 1rem;
+            padding: 0.25rem;
             resize: none;
-            overflow: hidden;
-            min-height: 24px;
-            resize: none;50px;
-            overflow: hidden;
             min-height: 24px;
             max-height: 150px;
-        }   outline: none;
+            line-height: 1.5;
         }
+        
+        .chat-input::placeholder {
+            color: var(--text-warm);
+        }
+        
         .chat-input:focus {
             outline: none;
-        }   display: flex;
-            align-items: center;
+        }
+        
         .input-actions {
-            display: flex;rem;
+            display: flex;
             align-items: center;
             gap: 0.5rem;
             padding: 0 0.5rem;
@@ -570,7 +577,7 @@
         <div class="chat-container">
             <div class="welcome-screen">
                 <h1 class="welcome-title">AI Assistant</h1>
-                <p class="welcome-subtitle">Powered by Ollama</p>
+                <p class="welcome-subtitle">Powered by Hosting-Club.de</p>
                 <div class="suggestion-chips">
                     <!-- This will be populated by JavaScript -->
                 </div>
@@ -606,14 +613,18 @@
             <div class="chat-messages"></div>
             <div class="input-container">
                 <div class="input-box">
-                    <textarea class="chat-input" placeholder="Type your message..." rows="1"></textarea>
+                    <textarea class="chat-input" placeholder="Message (press Enter to send)..." rows="1"></textarea>
                     <div class="input-actions">
                         <button class="action-btn settings-btn">
                             <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65z"/></svg>
                         </button>
-                        <button class="action-btn send-btn">
-                            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                        </button>
+                        <div class="input-actions">
+                            <button class="action-btn send-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
