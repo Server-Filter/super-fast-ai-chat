@@ -95,32 +95,45 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             console.log('Sending request to Ollama API...');
             
-            const requestBody = {
-                model: 'qwen2.5:0.5b',
-                prompt: message,
-                stream: false
-            };
-
-            console.log('Request body:', JSON.stringify(requestBody, null, 2));
+            // First try to verify API is accessible
+            const healthCheck = await fetch('http://localhost:11434/api/tags', {
+                method: 'GET'
+            });
             
+            if (!healthCheck.ok) {
+                throw new Error('Ollama API is not accessible');
+            }
+
             const response = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify({
+                    model: 'qwen2.5:0.5b',
+                    prompt: message,
+                    stream: false
+                })
             });
 
             console.log('Response status:', response.status);
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('API Error Response:', errorText);
+                throw new Error(`API request failed with status ${response.status}: ${errorText}`);
             }
 
             const data = await response.json();
             console.log('API Response:', data);
 
-            thinkingMessage.querySelector('.message-text').innerHTML = data.response;
+            // Update the thinking message with the response
+            if (data.response) {
+                thinkingMessage.querySelector('.message-text').innerHTML = data.response;
+            } else {
+                throw new Error('No response from API');
+            }
+
             thinkingMessage.scrollIntoView({ behavior: 'smooth' });
 
         } catch (error) {
@@ -133,15 +146,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let errorMessage = '⚠️ Error: ';
             
-            if (error.message.includes('Failed to fetch')) {
-                errorMessage += 'Could not connect to Ollama API. Please check if:\n' +
-                              '1. Ollama is running (systemctl status ollama)\n' +
-                              '2. The API is accessible (curl test)\n' +
-                              '3. The model "qwen2.5:0.5b" is installed (ollama list)';
+            if (error.message.includes('Failed to fetch') || error.message.includes('not accessible')) {
+                errorMessage += 'Could not connect to Ollama API. Please check if:\n\n' +
+                              '1. Ollama is running:\n   systemctl status ollama\n\n' +
+                              '2. Test the API:\n   curl -X POST http://localhost:11434/api/generate -d \'{"model":"qwen2.5:0.5b","prompt":"hello","stream":false}\'\n\n' +
+                              '3. Model is installed:\n   ollama list\n\n' +
+                              '4. Port 11434 is accessible';
             } else if (error.message.includes('404')) {
-                errorMessage += 'API endpoint not found. Please verify the API URL.';
+                errorMessage += 'API endpoint not found. Make sure Ollama API is running on port 11434';
             } else if (error.message.includes('500')) {
-                errorMessage += 'Server error occurred. Please check Ollama logs.';
+                errorMessage += 'Server error. Check Ollama logs:\n   journalctl -u ollama -f';
             } else {
                 errorMessage += `${error.message}\n\nPlease check the browser console for more details.`;
             }

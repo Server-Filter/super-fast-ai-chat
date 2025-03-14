@@ -20,6 +20,11 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
     next();
 });
 
@@ -31,66 +36,32 @@ app.get('/', (req, res) => {
 // Proxy route for Ollama API
 app.post('/api/generate', async (req, res) => {
     try {
-        console.log('Received request:', {
-            prompt: req.body.prompt,
-            timestamp: new Date().toISOString()
-        });
-
-        if (!req.body.prompt) {
-            throw new Error('Prompt is required');
-        }
-
-        const requestBody = {
-            model: process.env.OLLAMA_MODEL || 'qwen2.5:0.5b',
-            prompt: req.body.prompt,
-            stream: false // Set to false for direct response
-        };
-
-        console.log('Sending request to Ollama:', requestBody);
+        console.log('Received request:', req.body);
 
         const response = await fetch('http://localhost:11434/api/generate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify({
+                model: 'qwen2.5:0.5b',
+                prompt: req.body.prompt,
+                stream: false
+            })
         });
 
-        console.log('Ollama API response status:', response.status);
-
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Ollama API error response:', errorText);
-            throw new Error(`Ollama API error: ${response.status} - ${errorText}`);
+            throw new Error(`Ollama API error: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('Ollama API response:', {
-            model: data.model,
-            created_at: data.created_at,
-            response_length: data.response?.length,
-            done: data.done,
-            eval_duration: data.eval_duration
-        });
-
-        // Send the response back to the client
-        res.json({
-            response: data.response,
-            model: data.model,
-            done: data.done
-        });
+        res.json(data);
 
     } catch (error) {
-        console.error('Server error:', {
-            message: error.message,
-            stack: error.stack,
-            timestamp: new Date().toISOString()
-        });
-
+        console.error('Server error:', error);
         res.status(500).json({ 
             error: 'Failed to communicate with Ollama API',
-            details: error.message,
-            timestamp: new Date().toISOString()
+            details: error.message
         });
     }
 });
