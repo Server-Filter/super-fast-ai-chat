@@ -141,4 +141,34 @@ document.addEventListener('DOMContentLoaded', () => {
         thinking.scrollIntoView({ behavior: 'smooth' });
         return thinking;
     }
+
+    // Add this function to select random prompts
+    function getRandomPrompts(count = 3) {
+        const shuffled = [...suggestionPrompts].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, count);
+    }
+
+    // Function to render suggestion chips
+    function renderSuggestionChips() {
+        const suggestionsContainer = document.querySelector('.suggestion-chips');
+        suggestionsContainer.innerHTML = ''; // Clear existing chips
+        
+        const selectedPrompts = getRandomPrompts();
+        selectedPrompts.forEach(prompt => {
+            const chip = document.createElement('div');
+            chip.className = 'suggestion-chip';
+            chip.textContent = prompt;
+            chip.addEventListener('click', () => {
+                chatInput.value = prompt;
+                sendMessage();
+            });
+            suggestionsContainer.appendChild(chip);
+        });
+    }
+
+    // Render initial suggestions
+    renderSuggestionChips();
+
+    // Remove the old suggestion chips event listeners since we're now adding them
+    // when we create the chips
 });
