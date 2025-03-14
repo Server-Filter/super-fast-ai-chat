@@ -31,37 +31,91 @@ app.get('/', (req, res) => {
 // Proxy route for Ollama API
 app.post('/api/generate', async (req, res) => {
     try {
-        console.log('Received request:', req.body);
+        console.log('Received request:', {
+            prompt: req.body.prompt,
+            timestamp: new Date().toISOString()
+        });
+
+        if (!req.body.prompt) {
+            throw new Error('Prompt is required');
+        }
+
+        const requestBody = {
+            model: process.env.OLLAMA_MODEL || 'qwen2.5:0.5b',
+            prompt: req.body.prompt,
+            stream: false // Set to false for direct response
+        };
+
+        console.log('Sending request to Ollama:', requestBody);
 
         const response = await fetch('http://localhost:11434/api/generate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                model: 'qwen2.5:0.5b',
-                prompt: req.body.prompt,
-                stream: false
-            })
+            body: JSON.stringify(requestBody)
         });
 
+        console.log('Ollama API response status:', response.status);
+
         if (!response.ok) {
-            throw new Error(`Ollama API error: ${response.status}`);
+            const errorText = await response.text();
+            console.error('Ollama API error response:', errorText);
+            throw new Error(`Ollama API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
-        res.json(data);
+        console.log('Ollama API response:', {
+            model: data.model,
+            created_at: data.created_at,
+            response_length: data.response?.length,
+            done: data.done,
+            eval_duration: data.eval_duration
+        });
+
+        // Send the response back to the client
+        res.json({
+            response: data.response,
+            model: data.model,
+            done: data.done
+        });
 
     } catch (error) {
-        console.error('Server error:', error);
+        console.error('Server error:', {
+            message: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+        });
+
         res.status(500).json({ 
             error: 'Failed to communicate with Ollama API',
-            details: error.message
+            details: error.message,
+            timestamp: new Date().toISOString()
         });
     }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Global error handler:', err);
+    res.status(500).json({
+        error: 'Internal server error',
+        details: err.message,
+        timestamp: new Date().toISOString()
+    });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
+    console.log('Environment:', {
+        nodeEnv: process.env.NODE_ENV,
+        ollamaModel: process.env.OLLAMA_MODEL,
+        port: PORT
+    });
 });
