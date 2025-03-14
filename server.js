@@ -31,8 +31,8 @@ app.post('/api/generate', async (req, res) => {
             body: JSON.stringify({
                 model: process.env.OLLAMA_MODEL || 'qwen2.5:0.5b',
                 prompt: req.body.prompt,
-                stream: false,
-                format: 'json'
+                system: req.body.system,
+                stream: true
             })
         });
 
@@ -40,9 +40,14 @@ app.post('/api/generate', async (req, res) => {
             throw new Error(`Ollama API error: ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log('Ollama response:', data);
-        res.json(data);
+        // Set headers for streaming
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        // Pipe the Ollama response directly to the client
+        response.body.pipe(res);
+
     } catch (error) {
         console.error('Server error:', error);
         res.status(500).json({ 

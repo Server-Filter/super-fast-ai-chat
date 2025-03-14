@@ -11,6 +11,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let isProcessing = false;
 
+    // System prompt for thinking process
+    const SYSTEM_PROMPT = `
+    You are a helpful AI assistant. When you receive a question, first think about it and provide your thinking process in "think" tags.
+    Example:
+    Question: What is the capital of France?
+    Answer: <think>
+    The capital of France is Paris. Paris is known for the Eiffel Tower and is one of the largest cities in Europe.
+    </think>
+    The capital of France is Paris.
+
+    Always keep your thoughts within these <think></think> tags and your final answer outside these tags.
+    `;
+
     // Settings Panel
     settingsBtn.addEventListener('click', () => {
         settingsPanel.classList.add('open');
@@ -67,7 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sendButton.addEventListener('click', sendMessage);
 
-    function addMessage(content, isUser = false) {
+    function formatThinkingBlock(text) {
+        return text.split('\n').map(line => `> ${line}`).join('\n');
+    }
+
+    function addMessage(content, isUser = false, isThinking = false) {
         if (welcomeScreen) {
             welcomeScreen.remove();
         }
@@ -75,6 +92,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = document.createElement('div');
         message.className = `message ${isUser ? 'user-message' : ''}`;
         
+        let formattedContent = content;
+        if (isThinking) {
+            formattedContent = formatThinkingBlock(content);
+        }
+
         message.innerHTML = `
             <div class="avatar ${isUser ? 'user-avatar' : ''}">
                 <svg viewBox="0 0 24 24">
@@ -86,12 +108,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="message-sender">${isUser ? 'You' : 'AI'}</span>
                     <span class="message-time">${new Date().toLocaleTimeString()}</span>
                 </div>
-                <div class="message-text">${content}</div>
+                <div class="message-text">${formattedContent}</div>
             </div>
         `;
 
         chatMessages.appendChild(message);
         message.scrollIntoView({ behavior: 'smooth' });
+        return message;
     }
 
     async function sendMessage() {
@@ -99,37 +122,73 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!message || isProcessing) return;
 
         isProcessing = true;
-        addMessage(message, true);
+        const userMessageElement = addMessage(message, true);
         chatInput.value = '';
         chatInput.style.height = 'auto';
 
-        const thinking = addThinkingIndicator();
+        const thinkingMessage = addMessage('🤔 Thinking...', false);
 
         try {
-            console.log('Sending request:', message);
+            console.log('Sending request to Ollama API...');
             
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ prompt: message })
+                body: JSON.stringify({
+                    prompt: message,
+                    system: SYSTEM_PROMPT,
+                    stream: true
+                })
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const reader = response.body.getReader();
+            let fullResponse = '';
+            let thinkingPart = '';
+            let finalAnswer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = new TextDecoder().decode(value);
+                const lines = chunk.split('\n').filter(line => line.trim());
+
+                for (const line of lines) {
+                    try {
+                        const data = JSON.parse(line);
+                        if (data.response) {
+                            fullResponse += data.response;
+                            
+                            const thinkMatch = fullResponse.match(/<think>([\s\S]*?)<\/think>/);
+                            if (thinkMatch) {
+                                thinkingPart = thinkMatch[1].trim();
+                                finalAnswer = fullResponse.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+                            } else {
+                                finalAnswer = fullResponse;
+                            }
+
+                            // Update the thinking message
+                            let displayContent = '';
+                            if (thinkingPart) {
+                                displayContent = `🧠 **Thinking Process:**\n${thinkingPart}\n\n`;
+                            }
+                            if (finalAnswer) {
+                                displayContent += finalAnswer;
+                            }
+
+                            thinkingMessage.querySelector('.message-text').innerHTML = displayContent;
+                            thinkingMessage.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    } catch (error) {
+                        console.error('Error parsing chunk:', error);
+                    }
+                }
             }
 
-            const data = await response.json();
-            console.log('API Response:', data);
-            
-            thinking.remove();
-            
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            
-            addMessage(data.response);
         } catch (error) {
             console.error('Error details:', {
                 message: error.message,
@@ -137,33 +196,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 timestamp: new Date().toISOString()
             });
             
-            thinking.remove();
-            addMessage(`Error: ${error.message}`);
+            thinkingMessage.querySelector('.message-text').textContent = 
+                '⚠️ Error: Could not get a response. Please try again.';
         }
 
         isProcessing = false;
-    }
-
-    function addThinkingIndicator() {
-        const thinking = document.createElement('div');
-        thinking.className = 'message';
-        thinking.innerHTML = `
-            <div class="avatar">
-                <svg viewBox="0 0 24 24">
-                    <path d="M20 12a8 8 0 0 0-8-8A8 8 0 0 0 4 12a8 8 0 0 0 8 8 8 8 0 0 0 8-8m2 0A10 10 0 0 1 12 22 10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10"/>
-                </svg>
-            </div>
-            <div class="message-content">
-                <div class="thinking">
-                    <div class="thinking-dot"></div>
-                    <div class="thinking-dot"></div>
-                    <div class="thinking-dot"></div>
-                </div>
-            </div>
-        `;
-        chatMessages.appendChild(thinking);
-        thinking.scrollIntoView({ behavior: 'smooth' });
-        return thinking;
     }
 
     // Add this function to select random prompts
