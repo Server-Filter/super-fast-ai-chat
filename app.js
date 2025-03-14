@@ -36,7 +36,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function addMessage(content, isUser = false, isThinking = false) {
+    function formatContent(content) {
+        if (typeof content !== 'string') return content;
+
+        // Format code blocks with language support
+        content = content.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+            const id = 'code-' + Math.random().toString(36).substr(2, 9);
+            return `
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>${language || 'Code'}</span>
+                        <button class="copy-button" data-code-id="${id}">
+                            <svg viewBox="0 0 24 24" class="copy-icon">
+                                <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM8 21H19V7H8V21Z"/>
+                            </svg>
+                            Copy
+                        </button>
+                    </div>
+                    <pre><code id="${id}">${code.trim()}</code></pre>
+                </div>`;
+        });
+
+        // Format bold text with **
+        content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+        // Format thinking blocks
+        content = content.replace(/<think>([\s\S]*?)<\/think>/g, (match, thinking) => {
+            return `<div class="thinking-block">🤔 Thinking Process:\n${thinking}</div>`;
+        });
+
+        // Format numbered lists
+        content = content.replace(/^\d+\.\s+(.*)$/gm, '<li>$1</li>');
+        content = content.replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>');
+
+        return content;
+    }
+
+    function addMessage(content, isUser = false) {
         if (welcomeScreen) {
             welcomeScreen.remove();
         }
@@ -44,21 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = document.createElement('div');
         message.className = `message ${isUser ? 'user-message' : ''}`;
         
-        let formattedContent = content;
-        if (typeof content === 'string') {
-            // Format code blocks with ```
-            formattedContent = content.replace(/```([\s\S]*?)```/g, (match, code) => {
-                return `<pre><code>${code}</code></pre>`;
-            });
-            
-            // Format inline code with `
-            formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
-            
-            // Format thinking blocks
-            formattedContent = formattedContent.replace(/<think>([\s\S]*?)<\/think>/g, (match, thinking) => {
-                return `<div class="thinking-block">🤔 Thinking Process:\n${thinking}</div>`;
-            });
-        }
+        const formattedContent = formatContent(content);
 
         message.innerHTML = `
             <div class="avatar ${isUser ? 'user-avatar' : ''}">
@@ -74,6 +96,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="message-text">${formattedContent}</div>
             </div>
         `;
+
+        // Add copy functionality to code blocks
+        message.querySelectorAll('.copy-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const codeId = button.getAttribute('data-code-id');
+                const codeElement = document.getElementById(codeId);
+                const code = codeElement.textContent;
+
+                navigator.clipboard.writeText(code).then(() => {
+                    button.innerHTML = `
+                        <svg viewBox="0 0 24 24" class="copy-icon">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                        </svg>
+                        Copied!
+                    `;
+                    setTimeout(() => {
+                        button.innerHTML = `
+                            <svg viewBox="0 0 24 24" class="copy-icon">
+                                <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM8 21H19V7H8V21Z"/>
+                            </svg>
+                            Copy
+                        `;
+                    }, 2000);
+                });
+            });
+        });
 
         chatMessages.appendChild(message);
         message.scrollIntoView({ behavior: 'smooth' });
