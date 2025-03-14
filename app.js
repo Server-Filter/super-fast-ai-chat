@@ -103,19 +103,16 @@ document.addEventListener('DOMContentLoaded', () => {
         chatInput.value = '';
         chatInput.style.height = 'auto';
 
-        const apiUrl = document.getElementById('apiUrl').value;
         const thinking = addThinkingIndicator();
 
         try {
-            const response = await fetch(apiUrl, {
+            const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    model: currentModel,
                     prompt: message,
-                    stream: false
                 })
             });
 
@@ -124,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
             addMessage(data.response);
         } catch (error) {
             thinking.remove();
-            addMessage('Sorry, there was an error processing your request. Please make sure Ollama is running and try again.');
+            addMessage('Sorry, there was an error processing your request. Please try again.');
         }
 
         isProcessing = false;
