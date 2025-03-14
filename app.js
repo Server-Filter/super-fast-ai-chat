@@ -39,37 +39,41 @@ document.addEventListener('DOMContentLoaded', () => {
     function formatContent(content) {
         if (typeof content !== 'string') return content;
 
-        // Format code blocks with language support
-        content = content.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
-            const id = 'code-' + Math.random().toString(36).substr(2, 9);
-            return `
-                <div class="code-block">
-                    <div class="code-header">
-                        <span>${language || 'Code'}</span>
-                        <button class="copy-button" data-code-id="${id}">
-                            <svg viewBox="0 0 24 24" class="copy-icon">
-                                <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM8 21H19V7H8V21Z"/>
-                            </svg>
-                            Copy
-                        </button>
-                    </div>
-                    <pre><code id="${id}">${code.trim()}</code></pre>
-                </div>`;
-        });
+        // Split content into regular text and code blocks
+        const parts = content.split(/```(\w+)?\n([\s\S]*?)```/g);
+        let formattedContent = '';
 
-        // Format bold text with **
-        content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        for (let i = 0; i < parts.length; i++) {
+            if (i % 3 === 0) {
+                // Regular text: Format bold and lists
+                formattedContent += parts[i]
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/^\d+\.\s+(.*)$/gm, '<li>$1</li>')
+                    .replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>');
+            } else if (i % 3 === 1) {
+                // Language identifier (if any)
+                const language = parts[i] || 'text';
+                const code = parts[i + 1];
+                const id = 'code-' + Math.random().toString(36).substr(2, 9);
 
-        // Format thinking blocks
-        content = content.replace(/<think>([\s\S]*?)<\/think>/g, (match, thinking) => {
-            return `<div class="thinking-block">🤔 Thinking Process:\n${thinking}</div>`;
-        });
+                formattedContent += `
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>${language}</span>
+                            <button class="copy-button" data-code-id="${id}">
+                                <svg viewBox="0 0 24 24" class="copy-icon">
+                                    <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM8 21H19V7H8V21Z"/>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+                        <pre><code id="${id}" class="language-${language}">${code.trim()}</code></pre>
+                    </div>`;
+                i++; // Skip the next part as we've already processed it
+            }
+        }
 
-        // Format numbered lists
-        content = content.replace(/^\d+\.\s+(.*)$/gm, '<li>$1</li>');
-        content = content.replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>');
-
-        return content;
+        return formattedContent;
     }
 
     function addMessage(content, isUser = false) {
