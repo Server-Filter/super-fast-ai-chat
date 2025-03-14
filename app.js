@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Send message on Enter (without Shift)
     chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
-            console.log('Enter key pressed, attempting to send message');
+            console.log('Enter key pressed');
             e.preventDefault();
             sendMessage();
         }
