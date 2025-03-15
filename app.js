@@ -36,6 +36,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // System prompt for thinking process
     const SYSTEM_PROMPT = `
     You are a helpful AI assistant. When you receive a question, first think about it and provide your thinking process in "think" tags.
+
+    Content Guidelines:
+    - No personal information or names
+    - No inappropriate or adult content
+    - No financial advice or cryptocurrency
+    - No medical advice
+    - No malicious content or hacking
+    - Keep responses family-friendly
+    - Focus on educational and constructive content
+
     Example:
     Question: What is the capital of France?
     Answer: <think>
@@ -163,6 +173,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!message || isProcessing) return;
 
+        // Add spam check
+        const spamCheck = checkSpam(message);
+        if (spamCheck.isSpam) {
+            // Add a warning message
+            const warningMessage = addMessage(`⚠️ Message blocked: Contains inappropriate or unsafe content.
+            
+Type: ${spamCheck.reason}
+
+Please ensure your message follows our content guidelines:
+• No personal information
+• No inappropriate language
+• No spam or advertising
+• No malicious content
+• No links or contact information`, false);
+            
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            return;
+        }
+
         isProcessing = true;
         console.log('Processing started');
 
@@ -251,3 +281,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log('Chat interface ready');
 });
+
+// Add this after the existing constants in app.js
+const SPAM_PATTERNS = {
+    personalNames: /(?i)\b(Daniel|[A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\b/,
+    profanity: /(?i)\b(fuck|shit|bitch|asshole|bastard|damn|crap|wanker|douche|slut|whore)\b/,
+    adultContent: /(?i)\b(anal|blowjob|deepthroat|nude|porn|xxx|sex|cumshot|dildo|orgasm|escort|fetish|milf|nsfw|boobs|tits|pussy|dick|cock|vagina|penis)\b/,
+    spamPhrases: /(?i)\b(free money|earn cash|work from home|win big|special offer|limited time|click here|subscribe now|discount)\b/,
+    phishing: /(?i)\b(verify your account|password reset|bank account blocked|urgent action required|claim your prize|congratulations, you won|investment opportunity|crypto giveaway)\b/,
+    cryptoScams: /(?i)\b(bitcoin investment|crypto trading|double your money|forex signals|easy profit|no risk)\b/,
+    drugs: /(?i)\b(cocaine|heroin|meth|lsd|mdma|ecstasy|weed|cannabis|marijuana|shrooms|buy drugs online)\b/,
+    phoneNumbers: /\b\d{3,4}[-.\s]?\d{3}[-.\s]?\d{4}\b/,
+    emails: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i,
+    urls: /\bhttps?:\/\/[^\s]+\b/i,
+    unicodeTricks: /[\p{So}\p{Cn}]{2,}/u
+};
+
+function checkSpam(message) {
+    // Convert to lowercase for case-insensitive matching
+    const lowerMessage = message.toLowerCase();
+    
+    // Check each pattern
+    for (const [type, pattern] of Object.entries(SPAM_PATTERNS)) {
+        if (pattern.test(lowerMessage)) {
+            return {
+                isSpam: true,
+                reason: type,
+                pattern: pattern.toString()
+            };
+        }
+    }
+
+    return {
+        isSpam: false
+    };
+}
