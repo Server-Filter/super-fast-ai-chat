@@ -237,9 +237,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const chip = document.createElement('div');
             chip.className = 'suggestion-chip';
             chip.textContent = prompt;
+            // Changed: Only set the input value, don't send immediately
             chip.addEventListener('click', () => {
                 chatInput.value = prompt;
-                sendMessage();
+                chatInput.focus(); // Focus the input so user can edit
+                // Adjust input height to content
+                chatInput.style.height = 'auto';
+                chatInput.style.height = chatInput.scrollHeight + 'px';
             });
             suggestionsContainer.appendChild(chip);
         });
